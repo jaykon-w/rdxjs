@@ -221,7 +221,7 @@ export function StateMapper(target: any, key: string, descriptor: any) {
 
 export function StorageProvider(config: {
   combine: any[],
-  mapStateToProps: (store: any) => any,
+  mapStateToProps?: (store: any) => any,
 }) {
   return (target: any) => {
     return connect((store) => {

@@ -4,29 +4,13 @@ import { StorageProvider } from "./decorators/store";
 import { EventReportWithStatus } from './domain';
 
 @StorageProvider({
-  combine: [EventReportWithStatus],
-  mapStateToProps: (store) => (
-    {
-      ...store,
-    }
-  )
+  combine: [EventReportWithStatus]
 })
 export default class MyComponent extends React.Component<any, any> {
 
-  public onClick = () => {
-    this.props.actions.EventReportWithStatus.fetchEventWithStatus(['evt1', 'evt2'])
-  }
-
-  public onClickCount = (val: 'up'|'down') => {
-    if(val === 'up') {
-      this.props.actions.EventReportWithStatus.upCount();  
-    } else{
-      this.props.actions.EventReportWithStatus.downCount();
-    }
-  }
-
-  public onClickCountUp = () => this.onClickCount('up');
-  public onClickCountDown = () => this.onClickCount('down');
+  public onClick = () => this.props.actions.EventReportWithStatus.fetchEventWithStatus(['evt1', 'evt2'])
+  public onClickCountUp = () => this.props.actions.EventReportWithStatus.upCount();
+  public onClickCountDown = () => this.props.actions.EventReportWithStatus.downCount();
 
   public render() {
     return (

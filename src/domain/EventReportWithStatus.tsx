@@ -4,7 +4,6 @@ import { Action, CompositeAction, CompositeStorage, Inject, StateMapper } from "
 import { AnvisaStatus } from "./AnvisaStatus";
 import { EventReport } from "./EventReport";
 
-
 @Inject('EventReport')
 @Inject('AnvisaStatus')
 @CompositeStorage
