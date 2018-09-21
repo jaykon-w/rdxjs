@@ -1,0 +1,32 @@
+{
+  "name": "my-app",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "ramda": "0.25.0",
+    "react": "^16.5.2",
+    "react-dom": "^16.5.2",
+    "react-redux": "5.0.7",
+    "react-scripts-ts": "2.17.0",
+    "redux": "4.0.0",
+    "reselect": "3.0.1",
+    "rxjs": "6.3.2"
+  },
+  "scripts": {
+    "start": "react-scripts-ts start",
+    "build": "react-scripts-ts build",
+    "test": "react-scripts-ts test --env=jsdom",
+    "eject": "react-scripts-ts eject"
+  },
+  "devDependencies": {
+    "@types/jest": "^23.3.2",
+    "@types/node": "^10.10.1",
+    "@types/ramda": "0.25.38",
+    "@types/react": "^16.4.14",
+    "@types/react-dom": "^16.0.7",
+    "@types/react-redux": "6.0.9",
+    "@types/redux": "3.6.0",
+    "@types/reselect": "2.2.0",
+    "typescript": "^3.0.3"
+  }
+}
