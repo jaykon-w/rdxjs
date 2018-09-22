@@ -10,4 +10,8 @@ export {
   EventReport,
   EventReportWithStatus,
 };
-export default createReducers();
+export default createReducers({
+  AnvisaStatus,
+  EventReport,
+  EventReportWithStatus
+});

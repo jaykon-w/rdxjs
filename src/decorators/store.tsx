@@ -13,11 +13,11 @@ const actionsSymbol = Symbol('actions');
 const stateMappersSymbol = Symbol('stateMapper');
 const injectsSymbol = Symbol('injects');
 
-export function createReducers() {
+export function createReducers<T>(stores: {[key: string]: T}) {
   const initialState = {};
   const combinedReducers = {};
 
-  Object.keys(injectables).forEach(e => {
+  Object.keys(stores).forEach(e => {
     const instance = injectables[e].getInstance();
     initialState[e] = instance.state;
   });
