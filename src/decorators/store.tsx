@@ -1,20 +1,15 @@
-/* @flow */
+import * as R from 'ramda';
 import * as React from 'react';
 import { connect } from 'react-redux';
-import { Action, combineReducers, Store } from 'redux';
-import { BehaviorSubject, combineLatest } from 'rxjs';
-import { map, share, withLatestFrom } from 'rxjs/operators';
-
+import { Action as ReduxAction, combineReducers, Store } from 'redux';
+import { BehaviorSubject } from 'rxjs';
 
 const actions = {};
 const compositeAction = {};
-
 const reducers = {};
-
 const injectables = {};
 
 const actionsSymbol = Symbol('actions');
-// const stateSymbol = Symbol('state');
 const stateMappersSymbol = Symbol('stateMapper');
 const injectsSymbol = Symbol('injects');
 
@@ -33,12 +28,11 @@ export function createReducers() {
       reducers[e][k] = reducers[e][k].bind(instance);
     });
 
-    combinedReducers[e] = (state = initialState[e], action: Action & {payload: any[]}) => {
+    combinedReducers[e] = (state = initialState[e], action: ReduxAction & {payload: any[]}) => {
       const newState = reducers[e][action.type] ? 
         ((payload) => reducers[e][action.type](...payload))(action.payload) : 
         state;
       
-      instance.state$.next(newState);
       return newState;
     }
   });
@@ -47,10 +41,13 @@ export function createReducers() {
 }
 
 export const ReduxWrapper = (props: {store: Store, children: React.ReactElement<any>}) => {
+
   Object.keys(actions).forEach(e => {
     Object.keys(actions[e]).forEach(k => {
       const original = actions[e][k];
-      actions[e][k] = (...args: any[]) => props.store.dispatch(original(...args));
+      actions[e][k] = (...args: any[]) => {
+        props.store.dispatch(original(...args))
+      }
     });
   });
 
@@ -60,6 +57,25 @@ export const ReduxWrapper = (props: {store: Store, children: React.ReactElement<
     });
   });
 
+  let lastState = {};
+  const syncState = () => {
+    if (R.equals(lastState, props.store.getState())) {
+      return;
+    }
+    
+    lastState = props.store.getState();
+    Object.keys(lastState).forEach(e => {
+      const instance = injectables[e] && injectables[e].getInstance();
+      if (!instance) {
+        return;
+      }
+      instance.state$.next(lastState[e]);
+    })
+  };
+
+  props.store.subscribe(syncState);
+  syncState();
+
   return props.children;
 }
 
@@ -67,90 +83,56 @@ export interface IStorage {
   state: {[key: string]: any};
 }
 
-export function Storage<T>(target: any ) {
-  class Wrapper extends target {
-
-    public static instance: Wrapper;
-
-    public static getInstance() {
-      if (Wrapper.instance) {
-        return Wrapper.instance;
-      }
-      return Wrapper.instance = new Wrapper();
-    }
-
-    public state$ = new BehaviorSubject(this.state);
-
-    constructor() {
-      super();
-      this.state$.subscribe((newState: any) => this.state = {...newState});
-    }
-    
-  }
-
-  injectables[target.name] = Wrapper;
-  return target;
+interface IStorageConfig {
+  inject: string[];
 }
 
-export function CompositeStorage(target: any) {
-  class CompositeWrapper extends target {
+export function Storage(param: IStorageConfig|any) {
+  let hasInjects: boolean;
+  const wrapped = (target: any ) => {
+    if (hasInjects) {
+      target[injectsSymbol] = (param as IStorageConfig).inject;
+    }
 
-    public static instance: CompositeWrapper;
+    class Wrapper extends target {
 
-    public static getInstance() {
-      if (CompositeWrapper.instance) {
-        return CompositeWrapper.instance;
-      }
+      public static instance: Wrapper;
 
-      const dependencies = [] as any[];
-      const states = {};
-      const dependenciesNames = target[injectsSymbol] || [] as any[];
+      public static getInstance() {
+        if (Wrapper.instance) {
+          return Wrapper.instance;
+        }
 
-      dependenciesNames.forEach((e: any) => {
-        dependencies.push(injectables[e].getInstance());
-        states[e.depencency] = injectables[e].getInstance().state;
-      });
+        const dependencies = [] as any[];
+        const dependenciesNames = target[injectsSymbol] || [] as any[];
 
-      CompositeWrapper.instance = new CompositeWrapper(...dependencies);
-      CompositeWrapper.instance.state = {
-        ...CompositeWrapper.instance.state,
-        ...dependenciesNames
-          .map((e: string) => injectables[e].getInstance().state)
-          .reduce((a: any, b: any) => ({...a, ...b}), {})
-      }
-
-      CompositeWrapper.instance.state$
-        .pipe(
-          withLatestFrom(
-            combineLatest(
-              ...dependenciesNames.map((e: string) => injectables[e].getInstance().state$)
-            )
-          ),
-          map(([myNewState, compositeStates]) => {
-            return {
-              ...myNewState,
-              ...dependenciesNames.map((e: string, i: number) => {
-                return {[e]: compositeStates[i]}
-              }).reduce((a: any, b: any) => ({...a, ...b}), {}),
-            };
-          })
-        ).subscribe(newState => {
-          CompositeWrapper.instance.state = {...newState};
+        dependenciesNames.forEach((e: any) => {
+          dependencies.push(injectables[e].getInstance());
         });
 
-      return CompositeWrapper.instance;
+        return Wrapper.instance = new Wrapper(...dependencies);
+      }
+
+      public state$ = new BehaviorSubject(this.state);
+
+      constructor(...args: any[]) {
+        super(...args);
+        this.state$.subscribe((newState: any) => {
+          this.state = {...newState};
+        });
+      }
     }
 
-    public state$ = new BehaviorSubject(this.state);
-
-    constructor(...args: any[]) {
-      super(...args);
-    }
-    
+    injectables[target.name] = Wrapper;
+    return target;
   }
-  
-  injectables[target.name] = CompositeWrapper;
-  return target;
+
+  if (typeof(param) !== "function") {
+    hasInjects = true;
+    return wrapped;
+  } else {
+    return wrapped(param);
+  }
 }
 
 export function Action(actionNameOrTarget: any, key?: string, descriptor?: any) {
@@ -199,21 +181,12 @@ export function CompositeAction(target: any, key: string, descriptor: any) {
   target[actionsSymbol][key] = descriptor;
 
   return descriptor;
-};
-
-export function Inject(dependency: string) {
-  return (target: any) => {
-    target[injectsSymbol] = [
-      ...(target[injectsSymbol] || []),
-      dependency,
-    ]
-  }
 }
 
 export function StateMapper(target: any, key: string, descriptor: any) {
   target.constructor[stateMappersSymbol] = target.constructor[stateMappersSymbol] || [];
   target.constructor[stateMappersSymbol].push((store: any) => ({
-    [target.constructor.name]: descriptor.value(store[target.constructor.name]),
+    [target.constructor.name]: descriptor.value.call(injectables[target.constructor.name].getInstance(), store[target.constructor.name]),
   }));
     
   return descriptor;

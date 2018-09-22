@@ -23,6 +23,7 @@ let initialState = reducers(undefined, { type: null });
 if (env === 'development') {
   initialState = window.localStorage.getItem('state') === null ? initialState : JSON.parse(window.localStorage.getItem('state') || '');
 }
+console.log(initialState);
 
 const store = createStore(reducers, initialState, window['__REDUX_DEVTOOLS_EXTENSION__'] && window['__REDUX_DEVTOOLS_EXTENSION__']());
 // if development save state to localstorage

@@ -34,7 +34,10 @@ export class EventReport {
   }
 
   private async getEvents(eventIds: string[]) {
-    const response = await Promise.resolve([{eventId: '1'}]);
-    return response;
+    return new Promise<Array<{eventId: string}>>(res => {
+      setTimeout(() => {
+        res([{eventId: '1'}])
+      }, 1000);
+    });
   }
 }

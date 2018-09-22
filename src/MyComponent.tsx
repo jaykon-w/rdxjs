@@ -16,14 +16,14 @@ export default class MyComponent extends React.Component<any, any> {
     return (
       <div>
         {
-          this.props.EventReportWithStatus.loading ? <div>Carregando...</div> :
-          <h1>{this.props.EventReportWithStatus.eventWithStatus.map((e: any, i: number) => (
-            <div key={i}>
-              <p>event: {e.eventId}</p>
-              <p>statusAnvisa: {e.statusAnvisa.token}</p>
-            </div>
-          ))}</h1>
+          this.props.EventReportWithStatus.loading && <div>Carregando...</div> || null
         }
+        <h1>{this.props.EventReportWithStatus.eventWithStatus.map((e: any, i: number) => (
+          <div key={i}>
+            <p>event: {this.props.EventReportWithStatus.EventReport.loading ? 'Carregando...' : e.eventId}</p>
+            <p>statusAnvisa: {this.props.EventReportWithStatus.AnvisaStatus.loading ? 'Carregando...' : e.statusAnvisa && e.statusAnvisa.token}</p>
+          </div>
+        ))}</h1>
         
         <button onClick={this.onClick}>Clica Ai</button>
         <div>

@@ -1,13 +1,13 @@
 import * as R from 'ramda';
-import { Action, CompositeAction, Storage } from "../decorators/store";
+import { Action, CompositeAction, IStorage, Storage } from "../decorators/store";
 
 @Storage
-export class AnvisaStatus {
+export class AnvisaStatus implements IStorage {
   public state = {
     indexedStatus: {},
     loading: false,
     status: [],
-  } 
+  }
 
   @CompositeAction
   public async fetchStatusByTokens(tokens: string[]) {
@@ -37,7 +37,10 @@ export class AnvisaStatus {
   }
 
   private async getStatus(tokens: string[]) {
-    const response = await Promise.resolve([{token: '1'}]);
-    return response;
+    return new Promise<Array<{token: string}>>(res => {
+      setTimeout(() => {
+        res([{token: '1'}])
+      }, 1000);
+    });
   }
 }

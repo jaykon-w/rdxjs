@@ -1,30 +1,23 @@
 import * as R from 'ramda';
 import { createSelector } from 'reselect';
-import { Action, CompositeAction, CompositeStorage, Inject, StateMapper } from "../decorators/store";
+import { Action, CompositeAction, IStorage, StateMapper, Storage } from "../decorators/store";
 import { AnvisaStatus } from "./AnvisaStatus";
 import { EventReport } from "./EventReport";
 
-@Inject('EventReport')
-@Inject('AnvisaStatus')
-@CompositeStorage
-export class EventReportWithStatus {
-
-  /*
-   * Uma CompositeStorage une no seu estado um ou mais estados com base nos quais foram injetados
-   *
-  state = {
-    AnvisaStatus: this.anvisaStatus.state,
-    EventReport: this.eventReport.state,
-  }
-  */
+@Storage({
+  inject: ['AnvisaStatus', 'EventReport']
+})
+export class EventReportWithStatus implements IStorage {
 
   public state = {
     count: 0,
     eventWithStatus: [],
     loading: false,
-  } 
+  }
 
-  constructor(public anvisaStatus: AnvisaStatus, public eventReport: EventReport
+  constructor(
+    public anvisaStatus: AnvisaStatus, 
+    public eventReport: EventReport
   ) {}
 
   @CompositeAction
@@ -65,19 +58,20 @@ export class EventReportWithStatus {
 
   @StateMapper
   private getEventWithStatus(store: any) {
-    return createSelector([
-      (store: any) => store.EventReport.events || [],
-      (store: any) => store.AnvisaStatus.indexedStatus || {}, 
-    ],
-    (events: any[], indexedStatus: {}) => {
+    return createSelector(
+    () => this.anvisaStatus.state,
+    () => this.eventReport.state,
+    (AnvisaStatus: any, EventReport: any) => {
       return {
         ...store,
+        AnvisaStatus,
+        EventReport,
         eventWithStatus: [
           ...store.eventWithStatus,
-          ...events.map(e => {
+          ...EventReport.events.map((e: any) => {
             return {
               ...e,
-              statusAnvisa: indexedStatus[e.eventId]
+              statusAnvisa: AnvisaStatus.indexedStatus[e.eventId]
             };
           })
         ]
